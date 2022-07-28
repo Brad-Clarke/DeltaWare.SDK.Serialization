@@ -236,7 +236,7 @@ namespace DeltaWare.SDK.Serialization.Types
 
         public Dictionary<string, string> SerializeToDictionary<T>(T value) where T : class
         {
-            return SerializeToDictionary(value, typeof(T).GetPublicProperties());
+            return SerializeToDictionary(value, value.GetType().GetPublicProperties());
         }
 
         public Dictionary<string, string> SerializeToDictionary<T>(T value, Expression<Func<T, object>> propertySelector) where T : class
