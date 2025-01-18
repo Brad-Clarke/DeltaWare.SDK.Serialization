@@ -4,6 +4,6 @@ namespace DeltaWare.SDK.Serialization.Csv.Validation
 {
     public interface ICsvValidator
     {
-        void Validate(object value, PropertyInfo property);
+        void Validate(PropertyInfo property, object? value);
     }
 }

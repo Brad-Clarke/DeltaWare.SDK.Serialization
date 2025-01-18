@@ -1,34 +1,15 @@
-﻿using DeltaWare.SDK.Core.Caching;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 
 namespace DeltaWare.SDK.Serialization.Csv.Validation
 {
-    internal class DefaultCsvValidator : ICsvValidator
+    internal sealed class DefaultCsvValidator : ICsvValidator
     {
-        private readonly IAttributeCache _attributeCache;
-
-        public DefaultCsvValidator(IAttributeCache attributeCache)
+        public void Validate(PropertyInfo property, object? value)
         {
-            _attributeCache = attributeCache;
-        }
-
-        public void Validate(object value, PropertyInfo property)
-        {
-            if (_attributeCache.TryGetAttribute(property, out RequiredAttribute required))
-            {
-                required.Validate(value, property.Name);
-            }
-
-            if (_attributeCache.TryGetAttribute(property, out MaxLengthAttribute maxLength))
-            {
-                maxLength.Validate(value, property.Name);
-            }
-
-            if (_attributeCache.TryGetAttribute(property, out MinLengthAttribute minLength))
-            {
-                minLength.Validate(value, property.Name);
-            }
+            property.GetCustomAttribute<RequiredAttribute>()?.Validate(value, property.Name);
+            property.GetCustomAttribute<MaxLengthAttribute>()?.Validate(value, property.Name);
+            property.GetCustomAttribute<MinLengthAttribute>()?.Validate(value, property.Name);
         }
     }
 }
