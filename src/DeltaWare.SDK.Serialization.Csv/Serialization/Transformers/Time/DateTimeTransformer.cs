@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Time
 {

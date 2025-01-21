@@ -39,5 +39,10 @@
         /// A value indicating whether to skip empty lines while reading CSV data.
         /// </summary>
         bool SkipEmptyLines { get; }
+
+        /// <summary>
+        /// A value indicating whether to trim the whitespace from the beginning an end of a field.
+        /// </summary>
+        bool TrimFields { get; }
     }
 }

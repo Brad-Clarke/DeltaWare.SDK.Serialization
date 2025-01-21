@@ -1,4 +1,8 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Number;
@@ -20,7 +24,6 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
             new TimeSpanTransformer(),
             new BoolTransformer(),
             new CharTransformer(),
-            new EnumTransformer(),
             new GuidTransformer(),
             new StringTransformer());
 
@@ -71,6 +74,11 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
             if (_transformers.TryGetValue(property.PropertyType, out var transformer))
             {
                 return transformer;
+            }
+
+            if (property.PropertyType.IsEnum)
+            {
+                return new EnumTransformer(property.PropertyType);
             }
 
             var underlyingType = Nullable.GetUnderlyingType(property.PropertyType);

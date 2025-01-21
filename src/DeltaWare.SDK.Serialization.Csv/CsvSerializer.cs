@@ -1,5 +1,11 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
+using System.Threading;
+using System.Threading.Tasks;
 using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Mapping;
@@ -27,52 +33,57 @@ namespace DeltaWare.SDK.Serialization.Csv
 
         public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var csvType = typeof(T);
+            IReadOnlyCollection<PropertyMapping> propertyMappings = await GetPropertyMappings<T>(streamReader, hasHeader, cancellationToken);
+            
+            while (!streamReader.EndOfFile)
+            {
+                int index = 0;
 
-            IReadOnlyCollection<PropertyMapping> propertyMappings;
+                bool receivedData = false;
+
+                T csvObject = Activator.CreateInstance<T>();
+                
+                await foreach (var field in streamReader.ReadLineAsync().WithCancellation(cancellationToken))
+                {
+                    receivedData = true;
+
+                    var fieldMapping = propertyMappings.SingleOrDefault(p => p.Index == index);
+
+                    index++;
+
+                    if (fieldMapping == null)
+                    {
+                        continue;
+                    }
+
+                    var fieldValue = _propertySerializer.Deserialize(fieldMapping.Property, field);
+
+                    _csvValidator.Validate(fieldMapping.Property, fieldValue);
+
+                    fieldMapping.Property.SetValue(csvObject, fieldValue);
+                };
+
+                if (!receivedData)
+                {
+                    continue;
+                }
+
+                yield return csvObject;
+            }
+        }
+
+        private async Task<IReadOnlyCollection<PropertyMapping>> GetPropertyMappings<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken)
+        {
+            var csvType = typeof(T);
 
             if (hasHeader || csvType.GetCustomAttribute<CsvHeaderRequiredAttribute>() != null)
             {
                 var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
 
-                propertyMappings = _propertyMapper.CreatePropertyMappings(csvType, headers);
-            }
-            else
-            {
-                propertyMappings = _propertyMapper.CreatePropertyMappings(csvType);
+                return _propertyMapper.CreatePropertyMappings(csvType, true, headers);
             }
 
-            while (!streamReader.EndOfFile)
-            {
-                yield return await DeserializeLine<T>(propertyMappings, streamReader, cancellationToken);
-            }
-        }
-
-        private async Task<T> DeserializeLine<T>(IReadOnlyCollection<PropertyMapping> propertyMappings, CsvStreamReader streamReader, CancellationToken cancellationToken = default)
-        {
-            int index = 0;
-
-            T csvObject = Activator.CreateInstance<T>();
-
-            await foreach (var field in streamReader.ReadLineAsync().WithCancellation(cancellationToken))
-            {
-                var fieldMapping = propertyMappings.SingleOrDefault(p => p.Index == index);
-
-                index++;
-
-                if (fieldMapping == null || fieldMapping.Ignore)
-                {
-                    continue;
-                }
-                
-                var fieldValue = _propertySerializer.Deserialize(fieldMapping.Property, field);
-
-                _csvValidator.Validate(fieldMapping.Property, fieldValue);
-
-                fieldMapping.Property.SetValue(csvObject, fieldValue);
-            };
-
-            return csvObject;
+            return _propertyMapper.CreatePropertyMappings(csvType, true);
         }
     }
 }

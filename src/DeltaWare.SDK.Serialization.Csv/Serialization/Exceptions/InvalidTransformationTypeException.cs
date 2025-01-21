@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions
 {
     /// <summary>
     /// Thrown when an invalid type was provided.

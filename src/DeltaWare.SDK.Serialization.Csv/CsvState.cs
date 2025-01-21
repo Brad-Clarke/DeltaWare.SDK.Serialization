@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv
 {
     /// <summary>
     /// Indicates the current state of the CSV.

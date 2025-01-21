@@ -1,5 +1,10 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Reading.Options;
 
@@ -78,6 +83,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         {
             StringBuilder fieldBuilder = new StringBuilder();
 
+            bool isEmptyLine = true;
+
             await foreach (var character in GetCharacterStreamAsync().WithCancellation(cancellationToken))
             {
                 if (_state.HasFlag(CsvState.EndOfFile))
@@ -91,6 +98,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
                 if (_state.HasFlag(CsvState.Output))
                 {
+                    isEmptyLine = false;
+
                     fieldBuilder.Append(character);
                 }
 
@@ -100,12 +109,17 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                 }
                 
                 var field = fieldBuilder.ToString();
-
+                
                 fieldBuilder.Clear();
 
-                if (_state.HasFlag(CsvState.EndOfLine) && _state.HasFlag(CsvState.FieldStart) && _options.SkipEmptyLines)
+                if (_options.SkipEmptyLines && isEmptyLine && _state.HasFlag(CsvState.EndOfLine))
                 {
                     continue;
+                }
+
+                if (_options.TrimFields)
+                {
+                    field = field.Trim();
                 }
 
                 yield return field;
@@ -124,7 +138,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                 break;
             }
         }
-        
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetCharacterCsvState(CsvState previousState, char character)
         {
             if (previousState.HasFlag(CsvState.FieldStart) && character == _options.CommentCharacter)
@@ -144,7 +159,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
             if (character == _options.QuoteCharacter)
             {
-                return GetQuotationMarkStateCsvState(previousState, character);
+                return GetQuoteCharacterStateCsvState(previousState, character);
             }
 
             if (character == CarriageReturnCharacter)
@@ -165,6 +180,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             return previousState | CsvState.Output;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetCommentCharacterCsvState()
         {
             if (_options.IgnoreComments)
@@ -175,6 +191,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             return CsvState.Output | CsvState.WithinComment;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetWhitespaceCharacterStateCsvState(CsvState previousState)
         {
             if (previousState.HasFlag(CsvState.WithinComment))
@@ -205,6 +222,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             return previousState | CsvState.Output;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetDelimiterCharacterCsvState(CsvState previousState)
         {
             if (previousState.HasFlag(CsvState.WithinComment))
@@ -219,8 +237,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
             return CsvState.SuppressOutput | CsvState.FieldTerminated;
         }
-        
-        private CsvState GetQuotationMarkStateCsvState(CsvState previousState, char character)
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private CsvState GetQuoteCharacterStateCsvState(CsvState previousState, char character)
         {
             if (previousState.HasFlag(CsvState.WithinComment))
             {
@@ -245,6 +264,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             return CsvState.SuppressOutput | CsvState.FieldEncapsulated | CsvState.QuotationMarkHit;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetCarriageReturnCharacterCsvState(CsvState previousState)
         {
             if (previousState.HasFlag(CsvState.WithinComment))
@@ -260,21 +280,18 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             return CsvState.SuppressOutput | CsvState.FieldEnd;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private CsvState GetLineFeedCharacterCsvState(CsvState previousState)
         {
             if (previousState.HasFlag(CsvState.FieldEncapsulated) && !previousState.HasFlag(CsvState.QuotationMarkHit))
             {
                 return CsvState.Output | CsvState.FieldEncapsulated;
             }
-
-            if (previousState.HasFlag(CsvState.FieldStart))
-            {
-                return CsvState.SuppressOutput | CsvState.FieldStart | CsvState.FieldTerminated | CsvState.EndOfLine;
-            }
-
+            
             return CsvState.SuppressOutput | CsvState.FieldTerminated | CsvState.EndOfLine;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private async IAsyncEnumerable<char> GetCharacterStreamAsync()
         {
             while (_internalBufferPosition != _internalBufferLength || await RefreshInternalBufferAsync())

@@ -23,5 +23,8 @@
 
         /// <inheritdoc cref="ICsvReaderOptions.SkipEmptyLines"/>
         public bool SkipEmptyLines { get; set; } = true;
+
+        /// <inheritdoc cref="ICsvReaderOptions.TrimFields"/>
+        public bool TrimFields { get; set; } = false;
     }
 }

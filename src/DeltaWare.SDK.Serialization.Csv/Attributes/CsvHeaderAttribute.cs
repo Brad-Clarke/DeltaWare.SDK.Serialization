@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Attributes
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv.Attributes
 {
     /// <summary>
     /// Specifies the column associated with this property by the header name.

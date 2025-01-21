@@ -1,10 +1,21 @@
-﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+﻿using System;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
 {
     internal sealed class EnumTransformer : ITransformer
     {
-        public Type Type { get; } = typeof(Enum);
+        public Type Type { get; }
+
+        public EnumTransformer(Type enumType)
+        {
+            if (!enumType.IsEnum)
+            {
+                throw new ArgumentException();
+            }
+
+            Type = enumType;
+        }
 
         public bool CanSerialize(Type type)
         {
@@ -30,7 +41,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
 
             try
             {
-                return (Enum)Enum.Parse(Type, value);
+                return Enum.Parse(Type, value.Trim());
             }
             catch (InvalidTransformationTypeException)
             {

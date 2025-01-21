@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Time
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Time
 {
     internal sealed class TimeSpanTransformer : TransformerBase<TimeSpan>
     {

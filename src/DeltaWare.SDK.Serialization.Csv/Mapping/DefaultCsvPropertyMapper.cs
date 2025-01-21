@@ -1,4 +1,7 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
@@ -8,17 +11,17 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 {
     internal sealed class DefaultCsvPropertyMapper(IPropertySerializer propertySerializer) : ICsvPropertyMapper
     {
-        public IReadOnlyCollection<PropertyMapping> CreatePropertyMappings(Type type, IReadOnlyList<string?>? csvHeaders = null)
+        public IReadOnlyCollection<PropertyMapping> CreatePropertyMappings(Type type, bool requiresSetter, IReadOnlyList<string?>? csvHeaders = null)
         {
             IEnumerable<PropertyMapping> mappingEnumeration;
 
             if (csvHeaders == null)
             {
-                mappingEnumeration = GeneratePropertyMapByIndex(type);
+                mappingEnumeration = GeneratePropertyMapByIndex(type, requiresSetter);
             }
             else
             {
-                mappingEnumeration = GeneratePropertyMapByHeader(type, csvHeaders);
+                mappingEnumeration = GeneratePropertyMapByHeader(type, requiresSetter, csvHeaders);
             }
 
             var mappings = mappingEnumeration.ToList();
@@ -50,13 +53,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
             throw CsvSchemaException.MultiplePropertiesMappedToSameIndex(innerExceptions);
         }
 
-        private IEnumerable<PropertyMapping> GeneratePropertyMapByHeader(Type type, IReadOnlyList<string?> csvHeaders)
+        private IEnumerable<PropertyMapping> GeneratePropertyMapByHeader(Type type, bool requiresSetter, IReadOnlyList<string?> csvHeaders)
         {
-            var properties = type
-                .GetPublicProperties()
-                .Where(SupportedPropertiesPredicate)
-                .Select(ToHeaderNameWithProperty)
-                .ToDictionary();
+            var properties = GetMappableProperties(type, requiresSetter).Select(ToHeaderNameWithProperty).ToDictionary();
 
             if (properties.Count > csvHeaders.Count)
             {
@@ -70,12 +69,10 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                     throw CsvSchemaException.PropertyCouldNotBeMappedToHeader(property, targetHeader);
                 }
 
-                var ignore = property.GetCustomAttribute<CsvIgnoreAttribute>() != null;
-
-                yield return new PropertyMapping(property, index, ignore);
+                yield return new PropertyMapping(property, index);
             }
         }
-
+        
         private static bool TryGetHeaderIndex(IEnumerable<string?> headers, string targetHeader, out int index)
         {
             index = 0;
@@ -95,20 +92,15 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
             return false;
         }
         
-        private IEnumerable<PropertyMapping> GeneratePropertyMapByIndex(Type type)
+        private IEnumerable<PropertyMapping> GeneratePropertyMapByIndex(Type type, bool requireSetters)
         {
-            var properties = type
-                .GetPublicProperties()
-                .Where(SupportedPropertiesPredicate)
-                .ToArray();
+            var properties = GetMappableProperties(type, requireSetters).ToArray();
 
             MappingStrategy mappingStrategy = MappingStrategy.Uninitialized;
 
             for (int i = 0; i < properties.Length; i++)
             {
                 var indexAttribute = properties[i].GetCustomAttribute<CsvIndexAttribute>();
-
-                var ignore = properties[i].GetCustomAttribute<CsvIgnoreAttribute>() != null;
 
                 if (indexAttribute == null)
                 {
@@ -119,7 +111,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
                     mappingStrategy = MappingStrategy.DeclarationOrder;
                     
-                    yield return new PropertyMapping(properties[i], i, ignore);
+                    yield return new PropertyMapping(properties[i], i);
                 }
                 else
                 {
@@ -130,13 +122,28 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
                     mappingStrategy = MappingStrategy.AttributeControlled;
                     
-                    yield return new PropertyMapping(properties[i], indexAttribute.Index, ignore);
+                    yield return new PropertyMapping(properties[i], indexAttribute.Index);
                 }
             }
         }
 
-        private bool SupportedPropertiesPredicate(PropertyInfo property)
+        private IEnumerable<PropertyInfo> GetMappableProperties(Type type, bool requiresSetter)
+            => type
+                .GetPublicProperties()
+                .Where(p => SupportedPropertiesFilter(p, requiresSetter));
+
+        private bool SupportedPropertiesFilter(PropertyInfo property, bool requiresSetter)
         {
+            if (requiresSetter && property.GetSetMethod() == null)
+            {
+                return false;
+            }
+
+            if (property.GetCustomAttribute<CsvIgnoreAttribute>() != null)
+            {
+                return false;
+            }
+
             if (!propertySerializer.CanSerializer(property))
             {
                 throw CsvSchemaException.UnsupportedPropertyType(property);

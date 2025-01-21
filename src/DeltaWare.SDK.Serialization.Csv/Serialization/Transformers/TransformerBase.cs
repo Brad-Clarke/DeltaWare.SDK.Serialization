@@ -1,4 +1,5 @@
-﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+﻿using System;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 {

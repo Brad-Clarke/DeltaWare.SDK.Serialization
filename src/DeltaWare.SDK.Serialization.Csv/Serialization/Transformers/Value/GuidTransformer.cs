@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
 {
     internal sealed class GuidTransformer : TransformerBase<Guid>
     {

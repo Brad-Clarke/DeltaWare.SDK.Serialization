@@ -1,4 +1,5 @@
-﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers;
+﻿using System;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Attributes
 {

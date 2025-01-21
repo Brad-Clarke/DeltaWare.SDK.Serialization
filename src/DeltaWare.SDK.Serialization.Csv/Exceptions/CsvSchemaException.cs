@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
 

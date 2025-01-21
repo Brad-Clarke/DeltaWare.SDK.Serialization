@@ -1,4 +1,6 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
+﻿using System;
+
+namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 {
     public interface ITransformer
     {

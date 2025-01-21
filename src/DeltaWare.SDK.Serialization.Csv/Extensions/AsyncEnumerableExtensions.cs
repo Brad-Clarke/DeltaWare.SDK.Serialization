@@ -1,4 +1,8 @@
-﻿namespace DeltaWare.SDK.Serialization.Csv.Extensions
+﻿using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace DeltaWare.SDK.Serialization.Csv.Extensions
 {
     internal static class AsyncEnumerableExtensions
     {
