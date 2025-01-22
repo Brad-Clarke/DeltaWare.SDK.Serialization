@@ -13,7 +13,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
 {
     internal sealed class PropertySerializer : IPropertySerializer
     {
-        private readonly ITransformer[] _defaultTransformers = 
+        private readonly ITransformer[] _defaultTransformers =
         {
             new DecimalTransformer(),
             new FloatTransformer(),

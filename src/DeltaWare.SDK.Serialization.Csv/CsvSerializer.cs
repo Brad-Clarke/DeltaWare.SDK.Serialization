@@ -1,20 +1,18 @@
 ﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
+using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Mapping;
 using DeltaWare.SDK.Serialization.Csv.Options;
 using DeltaWare.SDK.Serialization.Csv.Reading;
 using DeltaWare.SDK.Serialization.Csv.Serialization;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Validation;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Transactions;
-using DeltaWare.SDK.Serialization.Csv.Exceptions;
-using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 
 namespace DeltaWare.SDK.Serialization.Csv
 {
@@ -39,7 +37,7 @@ namespace DeltaWare.SDK.Serialization.Csv
 
         public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            IReadOnlyCollection<PropertyMapping> propertyMappings = await GetPropertyMappings<T>(streamReader, hasHeader, cancellationToken);
+            IReadOnlyDictionary<int, PropertyInfo> propertyMappings = await GetPropertyMappingsAsync<T>(streamReader, hasHeader, cancellationToken);
 
             while (!streamReader.EndOfFile)
             {
@@ -47,35 +45,18 @@ namespace DeltaWare.SDK.Serialization.Csv
 
                 bool receivedData = false;
 
-                T csvObject = Activator.CreateInstance<T>();
+                T csvObject = Activator.CreateInstance<T>()!;
 
                 await foreach (var field in streamReader.ReadLineAsync().WithCancellation(cancellationToken))
                 {
                     receivedData = true;
 
-                    var fieldMapping = propertyMappings.SingleOrDefault(p => p.Index == index);
+                    if (propertyMappings.TryGetValue(index, out var fieldMapping))
+                    {
+                        DeserializeField(field, fieldMapping, csvObject, streamReader.LineNumber);
+                    }
 
                     index++;
-
-                    if (fieldMapping == null)
-                    {
-                        continue;
-                    }
-
-                    object? fieldValue;
-
-                    try
-                    {
-                        fieldValue = _propertySerializer.Deserialize(fieldMapping.Property, field);
-                    }
-                    catch (TransformationException ex)
-                    {
-                        throw new CsvSerializationException($"Failed to serialize the field at line {streamReader.LineNumber}, position {streamReader.LinePosition}. Please check the data format and ensure it matches the expected schema. Refer to the inner exception for more details.", ex);
-                    }
-
-                    _csvValidator.Validate(fieldMapping.Property, fieldValue);
-
-                    fieldMapping.Property.SetValue(csvObject, fieldValue);
                 };
 
                 if (!receivedData)
@@ -87,18 +68,44 @@ namespace DeltaWare.SDK.Serialization.Csv
             }
         }
 
-        private async Task<IReadOnlyCollection<PropertyMapping>> GetPropertyMappings<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken)
+        private void DeserializeField(string? field, PropertyInfo fieldMapping, object destinationObject, int lineNumber)
+        {
+            object? fieldValue;
+
+            try
+            {
+                fieldValue = _propertySerializer.Deserialize(fieldMapping, field);
+            }
+            catch (TransformationException ex)
+            {
+                throw CsvSerializationException.FailedToDeserializeField(lineNumber, fieldMapping, ex);
+            }
+
+            try
+            {
+                _csvValidator.Validate(fieldMapping, fieldValue);
+            }
+            catch (Exception ex)
+            {
+                throw CsvSerializationException.FieldValidationFailed(lineNumber, fieldMapping, ex);
+            }
+
+            fieldMapping.SetValue(destinationObject, fieldValue);
+        }
+
+        private async Task<IReadOnlyDictionary<int, PropertyInfo>> GetPropertyMappingsAsync<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken)
         {
             var csvType = typeof(T);
 
-            if (hasHeader || csvType.GetCustomAttribute<CsvHeaderRequiredAttribute>() != null)
+            if (!hasHeader && csvType.GetCustomAttribute<CsvHeaderRequiredAttribute>() == null)
             {
-                var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
-
-                return _propertyMapper.CreatePropertyMappings(csvType, true, headers);
+                return _propertyMapper.CreatePropertyMappings(csvType, true);
             }
 
-            return _propertyMapper.CreatePropertyMappings(csvType, true);
+            var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
+
+            return _propertyMapper.CreatePropertyMappings(csvType, true, headers);
+
         }
     }
 }

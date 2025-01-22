@@ -11,7 +11,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 {
     internal sealed class DefaultCsvPropertyMapper(IPropertySerializer propertySerializer) : ICsvPropertyMapper
     {
-        public IReadOnlyCollection<PropertyMapping> CreatePropertyMappings(Type type, bool requiresSetter, IReadOnlyList<string?>? csvHeaders = null)
+        public IReadOnlyDictionary<int, PropertyInfo> CreatePropertyMappings(Type type, bool requiresSetter, IReadOnlyList<string?>? csvHeaders = null)
         {
             IEnumerable<PropertyMapping> mappingEnumeration;
 
@@ -28,7 +28,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
             ValidateMappings(mappings);
 
-            return mappings;
+            return mappings.ToDictionary(v => v.Index, v => v.Property);
         }
 
         private void ValidateMappings(IEnumerable<PropertyMapping> mappings)
