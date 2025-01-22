@@ -1,19 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using DeltaWare.SDK.Serialization.Csv.Extensions;
-using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
+﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Number;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Time;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization
 {
     internal sealed class PropertySerializer : IPropertySerializer
     {
-        public static PropertySerializer Instance = new(
+        private readonly ITransformer[] _defaultTransformers =
+        [
             new DecimalTransformer(),
             new FloatTransformer(),
             new IntTransformer(),
@@ -25,13 +25,17 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
             new BoolTransformer(),
             new CharTransformer(),
             new GuidTransformer(),
-            new StringTransformer());
+            new StringTransformer()
+        ];
+
+        private readonly IFormatProvider _formatProvider;
 
         private readonly IReadOnlyDictionary<Type, ITransformer> _transformers;
 
-        private PropertySerializer(params ITransformer[] defaultTransformers)
+        public PropertySerializer(IFormatProvider formatProvider)
         {
-            _transformers = defaultTransformers
+            _formatProvider = formatProvider;
+            _transformers = _defaultTransformers
                 .ToDictionary(t => t.Type, t => t);
         }
 
@@ -44,7 +48,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
                 throw new Exception("We can't serialize this type because it has no associated transformer.");
             }
 
-            return transformer.TransformToString(value);
+            var formatOverride = property.GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider;
+
+            return transformer.TransformToString(value, formatOverride ?? _formatProvider);
         }
 
         public object? Deserialize(PropertyInfo property, string? value)
@@ -56,7 +62,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
                 throw new Exception("We can't serialize this type because it has no associated transformer.");
             }
 
-            return transformer.TransformToObject(value);
+            var formatOverride = property.GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider;
+
+            return transformer.TransformToObject(value, formatOverride ?? _formatProvider);
         }
 
         public bool CanSerializer(PropertyInfo property)

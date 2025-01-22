@@ -1,17 +1,20 @@
-﻿using System;
+﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
+using DeltaWare.SDK.Serialization.Csv.Extensions;
+using DeltaWare.SDK.Serialization.Csv.Mapping;
+using DeltaWare.SDK.Serialization.Csv.Options;
+using DeltaWare.SDK.Serialization.Csv.Reading;
+using DeltaWare.SDK.Serialization.Csv.Serialization;
+using DeltaWare.SDK.Serialization.Csv.Validation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.JavaScript;
 using System.Threading;
 using System.Threading.Tasks;
-using DeltaWare.SDK.Serialization.Csv.Attributes;
-using DeltaWare.SDK.Serialization.Csv.Extensions;
-using DeltaWare.SDK.Serialization.Csv.Mapping;
-using DeltaWare.SDK.Serialization.Csv.Reading;
-using DeltaWare.SDK.Serialization.Csv.Serialization;
-using DeltaWare.SDK.Serialization.Csv.Validation;
+using System.Transactions;
+using DeltaWare.SDK.Serialization.Csv.Exceptions;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 
 namespace DeltaWare.SDK.Serialization.Csv
 {
@@ -23,18 +26,21 @@ namespace DeltaWare.SDK.Serialization.Csv
 
         private readonly ICsvValidator _csvValidator;
 
-        public CsvSerializer(ICsvValidator? csvValidator = null)
+        private readonly ICsvSerializerOptions _options;
+
+        public CsvSerializer(ICsvSerializerOptions? options = null, ICsvValidator? csvValidator = null)
         {
+            _options = options ?? new CsvSerializerOptions();
             _csvValidator = csvValidator ?? new DefaultCsvValidator();
 
-            _propertySerializer = PropertySerializer.Instance;
+            _propertySerializer = new PropertySerializer(_options.FormatProvider);
             _propertyMapper = new DefaultCsvPropertyMapper(_propertySerializer);
         }
 
         public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             IReadOnlyCollection<PropertyMapping> propertyMappings = await GetPropertyMappings<T>(streamReader, hasHeader, cancellationToken);
-            
+
             while (!streamReader.EndOfFile)
             {
                 int index = 0;
@@ -42,7 +48,7 @@ namespace DeltaWare.SDK.Serialization.Csv
                 bool receivedData = false;
 
                 T csvObject = Activator.CreateInstance<T>();
-                
+
                 await foreach (var field in streamReader.ReadLineAsync().WithCancellation(cancellationToken))
                 {
                     receivedData = true;
@@ -56,7 +62,16 @@ namespace DeltaWare.SDK.Serialization.Csv
                         continue;
                     }
 
-                    var fieldValue = _propertySerializer.Deserialize(fieldMapping.Property, field);
+                    object? fieldValue;
+
+                    try
+                    {
+                        fieldValue = _propertySerializer.Deserialize(fieldMapping.Property, field);
+                    }
+                    catch (TransformationException ex)
+                    {
+                        throw new CsvSerializationException($"Failed to serialize the field at line {streamReader.LineNumber}, position {streamReader.LinePosition}. Please check the data format and ensure it matches the expected schema. Refer to the inner exception for more details.", ex);
+                    }
 
                     _csvValidator.Validate(fieldMapping.Property, fieldValue);
 

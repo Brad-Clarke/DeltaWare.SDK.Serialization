@@ -5,7 +5,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions
     /// <summary>
     /// Thrown when an invalid type was provided.
     /// </summary>
-    public class InvalidTransformationTypeException : Exception
+    public class InvalidTransformationTypeException : TransformationException
     {
         public InvalidTransformationTypeException(Type type) : base($"{type.Name} is not a supported type.")
         {

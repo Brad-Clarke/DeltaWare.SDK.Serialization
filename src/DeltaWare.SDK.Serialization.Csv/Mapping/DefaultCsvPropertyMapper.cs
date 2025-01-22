@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using DeltaWare.SDK.Serialization.Csv.Attributes;
+﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Serialization;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 
 namespace DeltaWare.SDK.Serialization.Csv.Mapping
 {
@@ -72,7 +72,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                 yield return new PropertyMapping(property, index);
             }
         }
-        
+
         private static bool TryGetHeaderIndex(IEnumerable<string?> headers, string targetHeader, out int index)
         {
             index = 0;
@@ -91,7 +91,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
             return false;
         }
-        
+
         private IEnumerable<PropertyMapping> GeneratePropertyMapByIndex(Type type, bool requireSetters)
         {
             var properties = GetMappableProperties(type, requireSetters).ToArray();
@@ -110,7 +110,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                     }
 
                     mappingStrategy = MappingStrategy.DeclarationOrder;
-                    
+
                     yield return new PropertyMapping(properties[i], i);
                 }
                 else
@@ -121,7 +121,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                     }
 
                     mappingStrategy = MappingStrategy.AttributeControlled;
-                    
+
                     yield return new PropertyMapping(properties[i], indexAttribute.Index);
                 }
             }

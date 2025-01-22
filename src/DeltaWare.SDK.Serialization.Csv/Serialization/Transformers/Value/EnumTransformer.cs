@@ -1,5 +1,5 @@
-﻿using System;
-using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+using System;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
 {
@@ -32,7 +32,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
             return false;
         }
 
-        public object? TransformToObject(string? value)
+        public object? TransformToObject(string? value, IFormatProvider formatProvider)
         {
             if (value == null)
             {
@@ -53,7 +53,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Value
             }
         }
 
-        public string? TransformToString(object? value)
+        public string? TransformToString(object? value, IFormatProvider formatProvider)
             => value?.ToString();
     }
 }

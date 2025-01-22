@@ -1,12 +1,12 @@
-﻿using System;
+﻿using DeltaWare.SDK.Serialization.Csv.Exceptions;
+using DeltaWare.SDK.Serialization.Csv.Reading.Options;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using DeltaWare.SDK.Serialization.Csv.Exceptions;
-using DeltaWare.SDK.Serialization.Csv.Reading.Options;
 
 namespace DeltaWare.SDK.Serialization.Csv.Reading
 {
@@ -91,9 +91,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                 {
                     break;
                 }
-                
+
                 _state = GetCharacterCsvState(_state, character);
-                
+
                 LinePosition++;
 
                 if (_state.HasFlag(CsvState.Output))
@@ -107,9 +107,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                 {
                     continue;
                 }
-                
+
                 var field = fieldBuilder.ToString();
-                
+
                 fieldBuilder.Clear();
 
                 if (_options.SkipEmptyLines && isEmptyLine && _state.HasFlag(CsvState.EndOfLine))
@@ -287,7 +287,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             {
                 return CsvState.Output | CsvState.FieldEncapsulated;
             }
-            
+
             return CsvState.SuppressOutput | CsvState.FieldTerminated | CsvState.EndOfLine;
         }
 
@@ -313,7 +313,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             _internalBufferPosition = 0;
             _internalBufferLength = await _baseStream.ReadAsync(_internalBuffer, 0, _internalBuffer.Length);
 
-            var notEndOfStream =  _internalBufferLength > 0;
+            var notEndOfStream = _internalBufferLength > 0;
 
             if (!notEndOfStream)
             {

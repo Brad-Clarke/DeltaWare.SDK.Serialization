@@ -8,8 +8,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 
         bool CanSerialize(Type type);
 
-        object? TransformToObject(string? value);
+        object? TransformToObject(string? value, IFormatProvider formatProvider);
 
-        string? TransformToString(object? value);
+        string? TransformToString(object? value, IFormatProvider formatProvider);
     }
 }

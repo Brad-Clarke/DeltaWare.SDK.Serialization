@@ -1,8 +1,8 @@
-﻿using System;
+﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using DeltaWare.SDK.Serialization.Csv.Attributes;
-using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
 
 namespace DeltaWare.SDK.Serialization.Csv.Exceptions
 {
@@ -19,10 +19,10 @@ namespace DeltaWare.SDK.Serialization.Csv.Exceptions
         internal static CsvSchemaException UnsupportedPropertyType(PropertyInfo property)
             => new($"The property '{property.Name}' of type '{property.PropertyType.Name}' is not supported for CSV serialization. To resolve this issue, you can either exclude this property from serialization by applying the [{nameof(CsvIgnoreAttribute)}] or provide a custom serializer for this type using the [{nameof(UseTransformerAttribute)}]");
 
-        internal static CsvSchemaException MultiplePropertiesMappedToSameIndex(int columnIndex, PropertyInfo propertyA, PropertyInfo propertyB) 
+        internal static CsvSchemaException MultiplePropertiesMappedToSameIndex(int columnIndex, PropertyInfo propertyA, PropertyInfo propertyB)
             => new($"Property mapping conflict: Both '{propertyA}' and '{propertyB}' are mapped to the same CSV column index {columnIndex}. Each property should be mapped to a unique column index.");
-        
-        internal static CsvSchemaException MultiplePropertiesMappedToSameIndex(IEnumerable<CsvSchemaException> innerExceptions) 
+
+        internal static CsvSchemaException MultiplePropertiesMappedToSameIndex(IEnumerable<CsvSchemaException> innerExceptions)
             => new("Property mapping conflict: Multiple properties are mapped to the same CSV column index. Check the InnerException(s) for details on each conflict.", new AggregateException(innerExceptions));
 
         internal static CsvSchemaException InvalidPropertyMappingStrategy(PropertyInfo property, string currentStrategy, string invalidStrategy)

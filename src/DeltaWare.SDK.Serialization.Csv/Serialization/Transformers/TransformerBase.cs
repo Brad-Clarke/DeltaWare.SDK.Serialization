@@ -1,5 +1,5 @@
-﻿using System;
-using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
+using System;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 {
@@ -10,7 +10,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
         public bool CanSerialize(Type type)
             => type == Type;
 
-        public object? TransformToObject(string? value)
+        public object? TransformToObject(string? value, IFormatProvider formatProvider)
         {
             if (value == null)
             {
@@ -19,7 +19,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 
             try
             {
-                return TransformToObjectType(value)!;
+                return TransformToObjectType(value, formatProvider)!;
             }
             catch (InvalidTransformationException)
             {
@@ -35,7 +35,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
             }
         }
 
-        public string? TransformToString(object? value)
+        public string? TransformToString(object? value, IFormatProvider formatProvider)
         {
             if (value == null)
             {
@@ -49,7 +49,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
 
             try
             {
-                return TransformFromObjectType(valueType);
+                return TransformFromObjectType(valueType, formatProvider);
             }
             catch (InvalidTransformationException)
             {
@@ -65,9 +65,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
             }
         }
 
-        protected abstract T TransformToObjectType(string value);
+        protected abstract T TransformToObjectType(string value, IFormatProvider formatProvider);
 
-        protected virtual string TransformFromObjectType(T value) 
-            => value?.ToString() ?? string.Empty;
+        protected abstract string TransformFromObjectType(T value, IFormatProvider formatProvider);
     }
 }
