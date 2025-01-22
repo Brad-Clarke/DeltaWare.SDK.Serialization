@@ -1,4 +1,5 @@
 ﻿using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Number;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Transformers.Time;
@@ -12,8 +13,8 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
 {
     internal sealed class PropertySerializer : IPropertySerializer
     {
-        private readonly ITransformer[] _defaultTransformers =
-        [
+        private readonly ITransformer[] _defaultTransformers = 
+        {
             new DecimalTransformer(),
             new FloatTransformer(),
             new IntTransformer(),
@@ -26,7 +27,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
             new CharTransformer(),
             new GuidTransformer(),
             new StringTransformer()
-        ];
+        };
 
         private readonly IFormatProvider _formatProvider;
 
@@ -45,7 +46,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
 
             if (transformer == null)
             {
-                throw new Exception("We can't serialize this type because it has no associated transformer.");
+                throw new InvalidTransformationTypeException(property.PropertyType);
             }
 
             var formatOverride = property.GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider;
@@ -59,7 +60,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization
 
             if (transformer == null)
             {
-                throw new Exception("We can't serialize this type because it has no associated transformer.");
+                throw new InvalidTransformationTypeException(property.PropertyType);
             }
 
             var formatOverride = property.GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider;

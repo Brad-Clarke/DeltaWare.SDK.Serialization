@@ -7,7 +7,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions
     /// </summary>
     public class InvalidTransformationTypeException : TransformationException
     {
-        public InvalidTransformationTypeException(Type type) : base($"{type.Name} is not a supported type.")
+        public InvalidTransformationTypeException(Type type) : base($"The Type {type.Name} Could not be serialized because it has not associated transformer. Please use the [UseTransformerAttribute] to provide the transformer to be used for this type.")
         {
         }
 
