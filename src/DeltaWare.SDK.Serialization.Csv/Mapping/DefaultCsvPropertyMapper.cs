@@ -9,7 +9,7 @@ using System.Reflection;
 
 namespace DeltaWare.SDK.Serialization.Csv.Mapping
 {
-    internal sealed class DefaultCsvPropertyMapper(IPropertySerializer propertySerializer) : ICsvPropertyMapper
+    internal sealed class DefaultCsvPropertyMapper(IPropertySerializer propertySerializer, bool caseInsensitive) : ICsvPropertyMapper
     {
         public IEnumerable<PropertyMapping> CreatePropertyMappings(Type type, bool requiresSetter, IReadOnlyList<string?>? csvHeaders = null)
         {
@@ -64,7 +64,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
             foreach (var (targetHeader, property) in properties)
             {
-                if (!TryGetHeaderIndex(csvHeaders, targetHeader, out int index))
+                if (!TryGetHeaderIndex(csvHeaders, targetHeader, caseInsensitive, out int index))
                 {
                     throw CsvSchemaException.PropertyCouldNotBeMappedToHeader(property, targetHeader);
                 }
@@ -73,12 +73,17 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
             }
         }
 
-        private static bool TryGetHeaderIndex(IEnumerable<string?> csvHeaders, string targetHeader, out int index)
+        private static bool TryGetHeaderIndex(IEnumerable<string?> csvHeaders, string targetHeader, bool caseInsensitive, out int index)
         {
             index = 0;
 
             foreach (var header in csvHeaders)
             {
+                if (caseInsensitive && header != null && header.Equals(targetHeader, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return true;
+                }
+                
                 if (header == targetHeader)
                 {
                     return true;

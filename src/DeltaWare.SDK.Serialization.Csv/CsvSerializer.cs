@@ -1,4 +1,4 @@
-using DeltaWare.SDK.Serialization.Csv.Attributes;
+﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Mapping;
@@ -7,6 +7,7 @@ using DeltaWare.SDK.Serialization.Csv.Reading;
 using DeltaWare.SDK.Serialization.Csv.Serialization;
 using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Validation;
+using DeltaWare.SDK.Serialization.Csv.Writing;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +34,41 @@ namespace DeltaWare.SDK.Serialization.Csv
             _csvValidator = csvValidator ?? new DefaultCsvValidator();
 
             _propertySerializer = new PropertySerializer(_options.FormatProvider);
-            _propertyMapper = new DefaultCsvPropertyMapper(_propertySerializer);
+            _propertyMapper = new DefaultCsvPropertyMapper(_propertySerializer, _options.CaseInsensitiveHeaders);
+        }
+
+
+
+        public async Task SerializeAsync<T>(IEnumerable<T> rows, CsvStreamWriter streamWriter, bool hasHeader, CancellationToken cancellationToken = default)
+        {
+            var mappedProperties = _propertyMapper
+                .CreatePropertyMappings(typeof(T), false)
+                .OrderBy(mp => mp.Index)
+                .ToList();
+
+            if (hasHeader)
+            {
+                await streamWriter.WriteLineAsync(mappedProperties.Select(s => s.HeaderName), cancellationToken);
+            }
+
+            foreach (var row in rows)
+            {
+                var serializedLine = SerializeLine(mappedProperties, row!, cancellationToken);
+
+                await streamWriter.WriteLineAsync(serializedLine, cancellationToken);
+            }
+        }
+
+        private IEnumerable<string?> SerializeLine(IEnumerable<PropertyMapping> propertyMappings, object rowObject, CancellationToken cancellationToken)
+        {
+            foreach (var mappedProperty in propertyMappings)
+            {
+                var fieldObject = mappedProperty.Property.GetValue(rowObject);
+
+                _csvValidator.Validate(mappedProperty.Property, fieldObject);
+
+                yield return _propertySerializer.Serialize(mappedProperty.Property, fieldObject);
+            }
         }
 
         public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)

@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DeltaWare.SDK.Serialization.Csv.Extensions;
 
 namespace DeltaWare.SDK.Serialization.Csv.Serialization
 {

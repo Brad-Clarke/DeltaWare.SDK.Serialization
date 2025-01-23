@@ -66,6 +66,18 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         }
 
         /// <summary>
+        /// Initializes a new instance of the CsvStreamReader class.
+        /// </summary>
+        /// <param name="baseStream">The input stream to read the CSV data from.</param>
+        /// <param name="options">Configuration options that control the behavior of the CSV reader.</param>
+        public CsvStreamReader(Stream baseStream, ICsvReaderOptions? options = null)
+        {
+            _baseStream = new StreamReader(baseStream);
+            _options = options ?? new CsvReaderOptions();
+            _internalBuffer = new char[_options.BufferSize];
+        }
+
+        /// <summary>
         /// Reads a single line from the CSV file asynchronously each time it is called, returning each field within that line as a separate string.
         /// </summary>
         /// <param name="cancellationToken">Optional cancellation token to cancel the read operation.</param>

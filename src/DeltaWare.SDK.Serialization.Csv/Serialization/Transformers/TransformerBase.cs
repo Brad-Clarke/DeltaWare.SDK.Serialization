@@ -17,6 +17,11 @@ namespace DeltaWare.SDK.Serialization.Csv.Serialization.Transformers
                 return null;
             }
 
+            if (Type != typeof(string) && string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
             try
             {
                 return TransformToObjectType(value, formatProvider)!;
