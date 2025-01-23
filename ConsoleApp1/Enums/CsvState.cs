@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DeltaWare.SDK.Serialization.Csv.Enums
+﻿namespace DeltaWare.SDK.Serialization.Csv.Enums
 {
     /// <summary>
     /// Indicates the current state of the CSV.

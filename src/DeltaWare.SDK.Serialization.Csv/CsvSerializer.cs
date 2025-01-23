@@ -1,4 +1,4 @@
-﻿using DeltaWare.SDK.Serialization.Csv.Attributes;
+using DeltaWare.SDK.Serialization.Csv.Attributes;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Extensions;
 using DeltaWare.SDK.Serialization.Csv.Mapping;
@@ -9,6 +9,7 @@ using DeltaWare.SDK.Serialization.Csv.Serialization.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Validation;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -99,12 +100,16 @@ namespace DeltaWare.SDK.Serialization.Csv
 
             if (!hasHeader && csvType.GetCustomAttribute<CsvHeaderRequiredAttribute>() == null)
             {
-                return _propertyMapper.CreatePropertyMappings(csvType, true);
+                return _propertyMapper
+                    .CreatePropertyMappings(csvType, true)
+                    .ToDictionary(m => m.Index, m => m.Property);
             }
 
             var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
 
-            return _propertyMapper.CreatePropertyMappings(csvType, true, headers);
+            return _propertyMapper
+                .CreatePropertyMappings(csvType, true, headers)
+                .ToDictionary(m => m.Index, m => m.Property);
 
         }
     }

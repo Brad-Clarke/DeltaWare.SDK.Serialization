@@ -21,11 +21,6 @@
         char QuoteCharacter { get; }
 
         /// <summary>
-        /// A value indicating whether to suppress whitespace at the start and end of each field.
-        /// </summary>
-        bool SuppressWhitespace { get; }
-
-        /// <summary>
         /// A value indicating whether to ignore comments in the CSV data.
         /// </summary>
         bool IgnoreComments { get; }

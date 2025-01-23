@@ -12,9 +12,6 @@
         /// <inheritdoc cref="ICsvReaderOptions.QuoteCharacter"/>
         public char QuoteCharacter { get; set; } = '"';
 
-        /// <inheritdoc cref="ICsvReaderOptions.SuppressWhitespace"/>
-        public bool SuppressWhitespace { get; set; } = false;
-
         /// <inheritdoc cref="ICsvReaderOptions.IgnoreComments"/>
         public bool IgnoreComments { get; set; } = true;
 

@@ -51,6 +51,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         private readonly char[] _internalBuffer;
         private readonly StreamReader _baseStream;
         private readonly ICsvReaderOptions _options;
+        private readonly StringBuilder _fieldBuilder = new StringBuilder();
 
         /// <summary>
         /// Initializes a new instance of the CsvStreamReader class.
@@ -81,26 +82,30 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         /// </remarks>
         public async IAsyncEnumerable<string?> ReadLineAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            StringBuilder fieldBuilder = new StringBuilder();
-
             bool isEmptyLine = true;
 
-            await foreach (var character in GetCharacterStreamAsync().WithCancellation(cancellationToken))
+            LinePosition = 0;
+
+            while (_internalBufferPosition < _internalBufferLength || await RefreshInternalBufferAsync())
             {
                 if (_state.HasFlag(CsvState.EndOfFile))
                 {
                     break;
                 }
 
+                char character = _internalBuffer[_internalBufferPosition];
+
                 _state = GetCharacterCsvState(_state, character);
 
+                Position++;
+                _internalBufferPosition++;
                 LinePosition++;
 
                 if (_state.HasFlag(CsvState.Output))
                 {
                     isEmptyLine = false;
 
-                    fieldBuilder.Append(character);
+                    _fieldBuilder.Append(character);
                 }
 
                 if (!_state.HasFlag(CsvState.FieldTerminated))
@@ -108,18 +113,18 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                     continue;
                 }
 
-                var field = fieldBuilder.ToString();
+                if (_options.TrimFields)
+                {
+                    TrimEnd(_fieldBuilder);
+                }
 
-                fieldBuilder.Clear();
+                var field = _fieldBuilder.ToString();
+
+                _fieldBuilder.Clear();
 
                 if (_options.SkipEmptyLines && isEmptyLine && _state.HasFlag(CsvState.EndOfLine))
                 {
                     continue;
-                }
-
-                if (_options.TrimFields)
-                {
-                    field = field.Trim();
                 }
 
                 yield return field;
@@ -137,6 +142,18 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
                 break;
             }
+        }
+
+        private static void TrimEnd(StringBuilder fieldBuilder)
+        {
+            int end = fieldBuilder.Length - 1;
+
+            while (end >= 0 && fieldBuilder[end] == WhitespaceCharacter)
+            {
+                end--;
+            }
+
+            fieldBuilder.Length = end + 1;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -177,6 +194,11 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                 throw InvalidCsvDataException.IllegalCharacterInNonEncapsulatedField(LineNumber, LinePosition, character);
             }
 
+            if (previousState.HasFlag(CsvState.FieldStart))
+            {
+                previousState &= ~CsvState.FieldStart;
+            }
+
             return previousState | CsvState.Output;
         }
 
@@ -201,7 +223,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
             if (previousState.HasFlag(CsvState.FieldStart))
             {
-                if (_options.SuppressWhitespace)
+                if (_options.TrimFields)
                 {
                     return CsvState.SuppressOutput | CsvState.FieldStart;
                 }
@@ -211,7 +233,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
             if (previousState.HasFlag(CsvState.FieldEnd))
             {
-                if (_options.SuppressWhitespace)
+                if (_options.TrimFields)
                 {
                     return CsvState.SuppressOutput | CsvState.FieldEnd;
                 }
@@ -289,23 +311,6 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
             }
 
             return CsvState.SuppressOutput | CsvState.FieldTerminated | CsvState.EndOfLine;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-        private async IAsyncEnumerable<char> GetCharacterStreamAsync()
-        {
-            while (_internalBufferPosition != _internalBufferLength || await RefreshInternalBufferAsync())
-            {
-                while (_internalBufferPosition < _internalBufferLength)
-                {
-                    char value = _internalBuffer[_internalBufferPosition];
-
-                    Position++;
-                    _internalBufferPosition++;
-
-                    yield return value;
-                }
-            }
         }
 
         private async Task<bool> RefreshInternalBufferAsync()

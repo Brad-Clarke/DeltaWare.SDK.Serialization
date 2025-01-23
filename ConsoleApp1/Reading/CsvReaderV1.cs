@@ -1,11 +1,7 @@
 ﻿using DeltaWare.SDK.Serialization.Csv.Enums;
 using DeltaWare.SDK.Serialization.Csv.Exceptions;
 using DeltaWare.SDK.Serialization.Csv.Reading.Settings;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace DeltaWare.SDK.Serialization.Csv.Reading
 {
