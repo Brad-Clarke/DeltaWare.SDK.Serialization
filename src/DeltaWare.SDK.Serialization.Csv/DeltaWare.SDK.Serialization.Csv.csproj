@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<TargetFrameworks>net8.0</TargetFrameworks>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<Version>8.0.0.4</Version>
+		<Version>8.0.0.5</Version>
 		<Author>Bradley Clarke</Author>
 		<Company>DeltaWare</Company>
 		<Product>DeltaWare.SDK</Product>
@@ -20,7 +20,7 @@
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<PackageOutputPath>..\..\nuget.packages</PackageOutputPath>
 		<Nullable>enable</Nullable>
-		<PackageReleaseNotes>Added Serializer.</PackageReleaseNotes>
+		<PackageReleaseNotes>3x Performance Improvement for Deserialization.</PackageReleaseNotes>
 	</PropertyGroup>
 
 	<ItemGroup>

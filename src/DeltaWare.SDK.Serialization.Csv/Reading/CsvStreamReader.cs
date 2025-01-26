@@ -120,26 +120,19 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
                     _fieldBuilder.Append(character);
                 }
 
-                if (!_state.HasFlag(CsvState.FieldTerminated))
-                {
-                    continue;
-                }
-
-                if (_options.TrimFields)
-                {
-                    TrimEnd(_fieldBuilder);
-                }
-
-                var field = _fieldBuilder.ToString();
-
-                _fieldBuilder.Clear();
-
                 if (_options.SkipEmptyLines && isEmptyLine && _state.HasFlag(CsvState.EndOfLine))
                 {
                     continue;
                 }
 
-                yield return field;
+                if (!_state.HasFlag(CsvState.FieldTerminated))
+                {
+                    continue;
+                }
+
+                yield return BuildField();
+
+                _fieldBuilder.Clear();
 
                 if (!_state.HasFlag(CsvState.EndOfLine))
                 {
@@ -154,6 +147,16 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
 
                 break;
             }
+        }
+
+        private string BuildField()
+        {
+            if (_options.TrimFields)
+            {
+                TrimEnd(_fieldBuilder);
+            }
+
+            return _fieldBuilder.ToString();
         }
 
         private static void TrimEnd(StringBuilder fieldBuilder)

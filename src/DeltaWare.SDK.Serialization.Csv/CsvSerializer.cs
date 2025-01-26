@@ -22,22 +22,14 @@ namespace DeltaWare.SDK.Serialization.Csv
     {
         private readonly ICsvPropertyMapper _propertyMapper;
 
-        private readonly IPropertySerializer _propertySerializer;
-
-        private readonly ICsvValidator _csvValidator;
-
         private readonly ICsvSerializerOptions _options;
 
-        public CsvSerializer(ICsvSerializerOptions? options = null, ICsvValidator? csvValidator = null)
+        public CsvSerializer(ICsvSerializerOptions? options = null)
         {
             _options = options ?? new CsvSerializerOptions();
-            _csvValidator = csvValidator ?? new DefaultCsvValidator();
 
-            _propertySerializer = new PropertySerializer(_options.FormatProvider);
-            _propertyMapper = new DefaultCsvPropertyMapper(_propertySerializer, _options.CaseInsensitiveHeaders);
+            _propertyMapper = new DefaultCsvPropertyMapper(new TransformerProvider(_options.FormatProvider), _options.FormatProvider, _options.CaseInsensitiveHeaders);
         }
-
-
 
         public async Task SerializeAsync<T>(IEnumerable<T> rows, CsvStreamWriter streamWriter, bool hasHeader, CancellationToken cancellationToken = default)
         {
@@ -65,15 +57,15 @@ namespace DeltaWare.SDK.Serialization.Csv
             {
                 var fieldObject = mappedProperty.Property.GetValue(rowObject);
 
-                _csvValidator.Validate(mappedProperty.Property, fieldObject);
+                mappedProperty.PropertyValidator.Validate(fieldObject);
 
-                yield return _propertySerializer.Serialize(mappedProperty.Property, fieldObject);
+                yield return mappedProperty.Transformer.TransformToString(fieldObject, mappedProperty.FormatProvider);
             }
         }
 
         public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            IReadOnlyDictionary<int, PropertyInfo> propertyMappings = await GetPropertyMappingsAsync<T>(streamReader, hasHeader, cancellationToken);
+            IReadOnlyDictionary<int, PropertyMapping> propertyMappings = await GetPropertyMappingsAsync<T>(streamReader, hasHeader, cancellationToken);
 
             while (!streamReader.EndOfFile)
             {
@@ -104,32 +96,32 @@ namespace DeltaWare.SDK.Serialization.Csv
             }
         }
 
-        private void DeserializeField(string? field, PropertyInfo fieldMapping, object destinationObject, int lineNumber)
+        private void DeserializeField(string? field, PropertyMapping fieldMapping, object destinationObject, int lineNumber)
         {
             object? fieldValue;
 
             try
             {
-                fieldValue = _propertySerializer.Deserialize(fieldMapping, field);
+                fieldValue = fieldMapping.Transformer.TransformToObject(field, fieldMapping.FormatProvider);
             }
             catch (TransformationException ex)
             {
-                throw CsvSerializationException.FailedToDeserializeField(lineNumber, fieldMapping, ex);
+                throw CsvSerializationException.FailedToDeserializeField(lineNumber, fieldMapping.Property, ex);
             }
 
             try
             {
-                _csvValidator.Validate(fieldMapping, fieldValue);
+                fieldMapping.PropertyValidator.Validate(fieldValue);
             }
             catch (Exception ex)
             {
-                throw CsvSerializationException.FieldValidationFailed(lineNumber, fieldMapping, ex);
+                throw CsvSerializationException.FieldValidationFailed(lineNumber, fieldMapping.Property, ex);
             }
 
-            fieldMapping.SetValue(destinationObject, fieldValue);
+            fieldMapping.Property.SetValue(destinationObject, fieldValue);
         }
 
-        private async Task<IReadOnlyDictionary<int, PropertyInfo>> GetPropertyMappingsAsync<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken)
+        private async Task<IReadOnlyDictionary<int, PropertyMapping>> GetPropertyMappingsAsync<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken)
         {
             var csvType = typeof(T);
 
@@ -137,14 +129,14 @@ namespace DeltaWare.SDK.Serialization.Csv
             {
                 return _propertyMapper
                     .CreatePropertyMappings(csvType, true)
-                    .ToDictionary(m => m.Index, m => m.Property);
+                    .ToDictionary(m => m.Index, m => m);
             }
 
             var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
 
             return _propertyMapper
                 .CreatePropertyMappings(csvType, true, headers)
-                .ToDictionary(m => m.Index, m => m.Property);
+                .ToDictionary(m => m.Index, m => m);
 
         }
     }

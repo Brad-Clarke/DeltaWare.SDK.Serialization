@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using DeltaWare.SDK.Serialization.Csv.Serialization.Attributes;
 
 namespace DeltaWare.SDK.Serialization.Csv.Mapping
 {
-    internal sealed class DefaultCsvPropertyMapper(IPropertySerializer propertySerializer, bool caseInsensitive) : ICsvPropertyMapper
+    internal sealed class DefaultCsvPropertyMapper(ITransformerProvider transformerProvider, IFormatProvider defaultFormatProvider, bool caseInsensitive) : ICsvPropertyMapper
     {
         public IEnumerable<PropertyMapping> CreatePropertyMappings(Type type, bool requiresSetter, IReadOnlyList<string?>? csvHeaders = null)
         {
@@ -69,7 +70,9 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                     throw CsvSchemaException.PropertyCouldNotBeMappedToHeader(property, targetHeader);
                 }
 
-                yield return new PropertyMapping(property, targetHeader, index);
+                var formatProvider = property.GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider ?? defaultFormatProvider;
+
+                yield return new PropertyMapping(property, targetHeader, index, transformerProvider.GetTransformer(property), formatProvider);
             }
         }
 
@@ -83,7 +86,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                 {
                     return true;
                 }
-                
+
                 if (header == targetHeader)
                 {
                     return true;
@@ -107,6 +110,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
             {
                 var indexAttribute = properties[i].GetCustomAttribute<CsvIndexAttribute>();
                 var headerName = properties[i].GetCustomAttribute<CsvHeaderAttribute>()?.Name ?? properties[i].Name;
+                var formatProvider = properties[i].GetCustomAttribute<UseFormatProviderAttribute>()?.FormatProvider ?? defaultFormatProvider;
 
                 if (indexAttribute == null)
                 {
@@ -117,7 +121,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
                     mappingStrategy = MappingStrategy.DeclarationOrder;
 
-                    yield return new PropertyMapping(properties[i], headerName, i);
+                    yield return new PropertyMapping(properties[i], headerName, i, transformerProvider.GetTransformer(properties[i]), formatProvider);
                 }
                 else
                 {
@@ -128,7 +132,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
 
                     mappingStrategy = MappingStrategy.AttributeControlled;
 
-                    yield return new PropertyMapping(properties[i], headerName, indexAttribute.Index);
+                    yield return new PropertyMapping(properties[i], headerName, indexAttribute.Index, transformerProvider.GetTransformer(properties[i]), formatProvider);
                 }
             }
         }
@@ -150,7 +154,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Mapping
                 return false;
             }
 
-            if (!propertySerializer.CanSerializer(property))
+            if (!transformerProvider.CanSerializer(property))
             {
                 throw CsvSchemaException.UnsupportedPropertyType(property);
             }
