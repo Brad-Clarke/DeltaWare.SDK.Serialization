@@ -3,24 +3,25 @@ using System;
 
 namespace DeltaWare.SDK.Serialization.Csv.Tests.Models
 {
-    [HeaderRequired]
+    [CsvHeaderRequired]
     public class PersonWithHeader
     {
+        //[CsvHeader("active")]
         public bool Active { get; set; }
 
-        [ColumnHeader("birth date")]
+        [CsvHeader("birth date")]
         public DateTime BirthDate { get; set; }
 
-        [ColumnHeader("first name")]
+        [CsvHeader("first name")]
         public string FirstName { get; set; }
 
-        [ColumnHeader("id")]
+        [CsvHeader("id")]
         public long Id { get; set; }
 
-        [ColumnHeader("last name")]
+        [CsvHeader("last name")]
         public string LastName { get; set; }
 
-        [ColumnHeader("class id")]
+        [CsvHeader("class id")]
         public int? ClassId { get; set; }
     }
 }
