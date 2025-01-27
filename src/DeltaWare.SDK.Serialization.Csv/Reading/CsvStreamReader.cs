@@ -80,7 +80,6 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         /// <summary>
         /// Reads a single line from the CSV file asynchronously each time it is called, returning each field within that line as a separate string.
         /// </summary>
-        /// <param name="cancellationToken">Optional cancellation token to cancel the read operation.</param>
         /// <returns>An <see cref="IAsyncEnumerable{T}"/> of <see cref="string"/> where each iteration yields a single string representing a field from the current line.</returns>
         /// <exception cref="InvalidCsvDataException">Thrown when an illegal character is found in a non-encapsulated field, 
         /// or when a quotation mark is encountered unexpectedly, indicating malformed CSV data.</exception>
@@ -92,7 +91,7 @@ namespace DeltaWare.SDK.Serialization.Csv.Reading
         /// The method concludes reading the current line either at the end of the line or when a cancellation is requested and will continue to read the next line upon subsequent calls until the end of the file is reached.
         /// It is crucial to ensure that the stream remains open and is not disposed or altered externally while reading is in progress.
         /// </remarks>
-        public async IAsyncEnumerable<string?> ReadLineAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<string?> ReadLineAsync()
         {
             bool isEmptyLine = true;
 

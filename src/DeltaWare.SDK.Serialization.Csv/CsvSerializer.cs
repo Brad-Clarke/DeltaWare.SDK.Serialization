@@ -63,7 +63,7 @@ namespace DeltaWare.SDK.Serialization.Csv
             }
         }
 
-        public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<T> DeserializeAsync<T>(CsvStreamReader streamReader, bool hasHeader, CancellationToken cancellationToken = default)
         {
             IReadOnlyDictionary<int, PropertyMapping> propertyMappings = await GetPropertyMappingsAsync<T>(streamReader, hasHeader, cancellationToken);
 
@@ -75,7 +75,7 @@ namespace DeltaWare.SDK.Serialization.Csv
 
                 T csvObject = Activator.CreateInstance<T>()!;
 
-                await foreach (var field in streamReader.ReadLineAsync().WithCancellation(cancellationToken))
+                await foreach (var field in streamReader.ReadLineAsync())
                 {
                     receivedData = true;
 
@@ -132,7 +132,7 @@ namespace DeltaWare.SDK.Serialization.Csv
                     .ToDictionary(m => m.Index, m => m);
             }
 
-            var headers = await streamReader.ReadLineAsync(cancellationToken).ToListAsync(cancellationToken);
+            var headers = await streamReader.ReadLineAsync().ToListAsync(cancellationToken);
 
             return _propertyMapper
                 .CreatePropertyMappings(csvType, true, headers)
